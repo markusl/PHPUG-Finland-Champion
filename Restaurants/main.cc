@@ -14,6 +14,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <map>
 #include <locale>
@@ -61,7 +62,7 @@ std::vector<std::string> split_by(const std::string &line)
         std::istream_iterator<std::string>());
 }
 
-inline std::string &trim_start(std::string &s) {
+inline std::string trim_start(std::string s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
         std::not1(std::ptr_fun<int, int>(std::isspace))));
     return s;
