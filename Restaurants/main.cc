@@ -14,6 +14,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <map>
 #include <locale>
