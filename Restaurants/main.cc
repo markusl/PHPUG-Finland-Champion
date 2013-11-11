@@ -39,18 +39,18 @@ static const std::map<std::string, int> DayMap{
 size_t count_hours_single_timespan(const std::string &opening_times)
 {
     // Possible inputs: "Ma-Pe 10:00-16:00", or "To 09:00-16:30", "Ma-Pe 10:00-12:00 ja 12:30-14:30"
-    const auto full_time = lib::trim_start(std::string(opening_times));
-    const size_t pos = full_time.find(' ');
+    const auto full_time = lib::trim_start(opening_times);
+    const size_t space_pos = full_time.find(' ');
 
     // Extract the hour parts from string: "10:00-12:00 ja 12:30-14:30" -> ["10:00-12:00", "12:30-14:30"]
-    const auto hour_parts = [](const std::string &hours) -> std::vector<std::string>
+    const auto extract_hour_parts = [](const std::string &hours) -> std::vector<std::string>
     {
         const size_t two_parts = hours.find(Ja);
         if(std::string::npos == two_parts)
             return{ hours };
         else
             return{ hours.substr(0, two_parts), hours.substr(two_parts + Ja.length()) };
-    }(full_time.substr(pos));
+    };
 
     // Convert hour span from string to number of hours: "10:00-12:00" -> 2
     const auto count_hours = [](const std::string &hours) -> size_t {
@@ -66,14 +66,8 @@ size_t count_hours_single_timespan(const std::string &opening_times)
         return (times[1] - times[0]) / 60;
     };
 
-    // Sum the hour parts: ["10:00-12:00", "12:30-14:30"] -> 4
-    const auto hours = lib::sum_vector(lib::map(count_hours, hour_parts));
-
-    // Contains the day span string "Ma-Pe"
-    const std::string days_str = full_time.substr(0, pos);
-
     // Convert day span to number of days: "Ma-Pe" -> 5
-    const auto days = [&](const std::string &days)
+    const auto count_days = [&](const std::string &days)
     {
         const size_t dash = days.find(lib::Dash);
         if(std::string::npos == dash)
@@ -82,7 +76,15 @@ size_t count_hours_single_timespan(const std::string &opening_times)
         const auto end = days.substr(dash + 1);
         const auto start = days.substr(0, dash);
         return DayMap.find(end)->second - DayMap.find(start)->second + 1;
-    }(days_str);
+    };
+
+    const auto hour_parts = extract_hour_parts(full_time.substr(space_pos));
+    // Sum the hour parts: ["10:00-12:00", "12:30-14:30"] -> 4
+    const auto hours = lib::sum_vector(lib::map(count_hours, hour_parts));
+
+    // Contains the day span string "Ma-Pe"
+    const std::string days_str = full_time.substr(0, space_pos);
+    const auto days = count_days(days_str);
 
     return hours * days;
 }
