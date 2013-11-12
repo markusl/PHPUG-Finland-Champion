@@ -60,9 +60,8 @@ size_t count_hours_single_timespan(const std::string &opening_times)
                 return std::stoi(elem[0]) * 60 + std::stoi(elem[1]);
             return 0;
         };
-        const auto times_split = lib::map(lib::split_by<lib::Colon>,
-                                          lib::split_by<lib::Dash>(hours));
-        const auto times = lib::map(sum_minutes, times_split);
+        const auto times_split = lib::map(lib::split_by<lib::Dash>(hours), lib::split_by<lib::Colon>);
+        const auto times = lib::map(times_split, sum_minutes);
         return (times[1] - times[0]) / 60;
     };
 
@@ -80,7 +79,7 @@ size_t count_hours_single_timespan(const std::string &opening_times)
 
     const auto hour_parts = extract_hour_parts(full_time.substr(space_pos));
     // Sum the hour parts: ["10:00-12:00", "12:30-14:30"] -> 4
-    const auto hours = lib::sum_vector(lib::map(count_hours, hour_parts));
+    const auto hours = lib::sum_vector(lib::map(hour_parts, count_hours));
 
     // Contains the day span string "Ma-Pe"
     const std::string days_str = full_time.substr(0, space_pos);
@@ -94,20 +93,21 @@ std::vector<std::pair<std::string, size_t>> restaurants_sorted(const std::vector
 {
     const auto count_hours = [](const std::vector<std::string> &hours)
     {
-        return lib::map(count_hours_single_timespan, hours);
+        return lib::map(hours, count_hours_single_timespan);
     };
 
-    const auto restaurant_column = lib::map(lib::select_nth<1, std::string>, contents);
+    const auto restaurant_column = lib::map(contents, lib::select_nth<1, std::string>);
     // ["Ma-Pe 10:00-16:00, To 09:00-16:30", ...]
-    const auto time_column = lib::map(lib::select_nth<4, std::string>, contents);
+    const auto time_column = lib::map(contents, lib::select_nth<4, std::string>);
     // [["Ma-Pe 10:00-16:00", "To 09:00-16:30"], [...], ...]
-    const auto times = lib::map(lib::split_by<lib::Comma>, time_column);
+    const auto times = lib::map(time_column, lib::split_by<lib::Comma>);
     // [["10:00-16:00", "09:00-16:30"], ...] -> [[6, 7], ...]
-    const auto hours = lib::map(count_hours, times);
+    const auto hours = lib::map(times, count_hours);
     // [[6, 7], ...] -> [13, ...]
-    const auto hours_summed = lib::map(lib::sum_vector, hours);
+    const auto hours_summed = lib::map(hours, lib::sum_vector);
 
-    auto combined = lib::zip([](const std::string &name, const size_t hours) { return std::make_pair(name, hours); }, restaurant_column, hours_summed);
+    auto combined = lib::zip(restaurant_column, hours_summed,
+                            [](const std::string &name, const size_t hours) { return std::make_pair(name, hours); });
     std::sort(combined.begin(), combined.end(), lib::by_second<std::pair<std::string, size_t>>);
 
     return combined;

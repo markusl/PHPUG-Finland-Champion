@@ -55,25 +55,31 @@ auto map_file_contents(const std::string &file_name, Fn f) -> std::vector<declty
     return values;
 };
 
+/// Parallel map
 template<typename Ty, typename F>
-auto map(F func, std::vector<Ty> vector) -> std::vector<decltype(func(Ty()))>
+auto pmap(std::vector<Ty> vector, F func) -> std::vector<decltype(func(Ty()))>
 {
     std::vector<decltype(func(Ty()))> result(vector.size());
-#if CONCURRENCY
     concurrency::parallel_transform(vector.begin(), vector.end(),
         begin(result), func);
-#else // CONCURRENCY
+    return result;
+}
+
+template<typename Ty, typename F>
+auto map(std::vector<Ty> vector, F func) -> std::vector<decltype(func(Ty()))>
+{
+    std::vector<decltype(func(Ty()))> result(vector.size());
     std::transform(vector.begin(), vector.end(), begin(result), func);
-#endif // CONCURRENCY
     return result;
 }
 
 template<typename T1, typename T2, typename F>
-auto zip(F func, const std::vector<T1>& first, const std::vector<T2>& second) -> std::vector<decltype(func(T1(), T2()))>
+auto zip(const std::vector<T1>& first, const std::vector<T2>& second, F func) -> std::vector<decltype(func(T1(), T2()))>
 {
-    std::vector<decltype(func(T1(), T2()))> result;
+    assert(first.size() == second.size());
+    std::vector<decltype(func(T1(), T2()))> result(first.size());
     std::transform(first.begin(), first.end(), second.begin(),
-        std::back_inserter(result), func);
+        result.begin(), func);
     return result;
 }
 
