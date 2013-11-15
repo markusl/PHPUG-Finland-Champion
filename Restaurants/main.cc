@@ -13,17 +13,16 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
-#include <string>
 #include <cstring>
-#include <vector>
 #include <map>
 #include <locale>
 #include <cctype>
 #include <assert.h>
-//#define CONCURRENCY
-#if CONCURRENCY
+#define CONCURRENCY
+#ifdef CONCURRENCY
 #include <ppl.h>
 #endif
+#include "Restaurants.hpp"
 #include "library.hpp"
 
 static const std::string Ja{ " ja " };
@@ -89,7 +88,7 @@ size_t count_hours_single_timespan(const std::string &opening_times)
 }
 
 /** From the rows and columns in the data, extract restaurant opening hours, sorted in descending order. */
-std::vector<std::pair<std::string, size_t>> restaurants_sorted(const std::vector<std::vector<std::string>> &contents)
+std::vector<OpeningHours> restaurants_sorted(const std::vector<std::vector<std::string>> &contents)
 {
     const auto count_hours = [](const std::vector<std::string> &hours)
     {
@@ -106,32 +105,21 @@ std::vector<std::pair<std::string, size_t>> restaurants_sorted(const std::vector
     // [[6, 7], ...] -> [13, ...]
     const auto hours_summed = lib::map(hours, lib::sum_vector);
 
-    auto combined = lib::zip(restaurant_column, hours_summed,
-                            [](const std::string &name, const size_t hours) { return std::make_pair(name, hours); });
-    std::sort(combined.begin(), combined.end(), lib::by_second<std::pair<std::string, size_t>>);
+    auto combined = lib::zip(restaurant_column, hours_summed, OpeningHours::construct);
+    std::sort(combined.begin(), combined.end());
 
     return combined;
 }
 
-void unit_tests()
-{
-    assert(count_hours_single_timespan("Ma-Pe 10:00-16:00") == 5 * 6);
-    assert(count_hours_single_timespan("To 09:00-16:30") == 7);
-    assert(count_hours_single_timespan("Pe 09:30-16:00") == 6);
-    assert(count_hours_single_timespan("Ke-Pe 10:00-16:00") == 3 * 6);
-    assert(count_hours_single_timespan("Ma-Pe 10:00-12:00 ja 12:30-14:30") == 5 * 2 + 5 * 2);
-}
+#if 0
 
 int main(const int argc, char **argv)
 {
-#if _DEBUG
-    unit_tests();
-#endif
-
     // [line, ...]
     const auto contents = lib::map_file_contents(std::string(argv[1]), lib::split_by<lib::Semicolon>);
     const auto restaurants = restaurants_sorted(contents);
 
-    std::cout << restaurants[0].first << " #1 open " << restaurants[1].second << " hours per week\n";
-    std::cout << restaurants[restaurants.size() - 1].first << " #2 open " << restaurants[restaurants.size() - 1].second << " hours per week" << std::endl;
+    std::cout << restaurants[0].Restaurant << " #1 open " << restaurants[1].Hours << " hours per week\n";
+    std::cout << restaurants[restaurants.size() - 1].Restaurant << " #2 open " << restaurants[restaurants.size() - 1].Hours << " hours per week" << std::endl;
 }
+#endif
